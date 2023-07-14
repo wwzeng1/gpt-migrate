@@ -6,6 +6,9 @@ import os
 import time as time
 from yaspin import yaspin
 from steps.debug import require_human_intervention
+from utils import read_file_in_chunks
+
+CONTEXT_WINDOW_SIZE = 1024
 
 def run_dockerfile(globals):
     try:
@@ -28,8 +31,9 @@ def run_dockerfile(globals):
             return error_message
         else:
             dockerfile_content = ""
-            with open(os.path.join(globals.targetdir, 'Dockerfile'), 'r') as file:
-                dockerfile_content = file.read()
+            with read_file_in_chunks(os.path.join(globals.targetdir, 'Dockerfile'), CONTEXT_WINDOW_SIZE) as file_chunks:
+                for chunk in file_chunks:
+                    dockerfile_content += chunk
             require_human_intervention(error_message,relevant_files=construct_relevant_files([("Dockerfile", dockerfile_content)]),globals=globals)
             raise typer.Exit()
         
@@ -40,8 +44,9 @@ def create_tests(testfile,globals):
         os.makedirs(os.path.join(globals.targetdir, 'gpt_migrate'))
 
     old_file_content = ""
-    with open(os.path.join(globals.sourcedir, testfile), 'r') as file:
-        old_file_content = file.read()
+    with read_file_in_chunks(os.path.join(globals.sourcedir, testfile), CONTEXT_WINDOW_SIZE) as file_chunks:
+        for chunk in file_chunks:
+            old_file_content += chunk
 
     create_tests_template = prompt_constructor(HIERARCHY, GUIDELINES, WRITE_CODE, CREATE_TESTS, SINGLEFILE)
 
@@ -79,8 +84,9 @@ def validate_tests(testfile,globals):
             return error_message
         else:
             tests_content = ""
-            with open(os.path.join(globals.targetdir, f"gpt_migrate/{testfile}"), 'r') as file:
-                tests_content = file.read()
+            with read_file_in_chunks(os.path.join(globals.targetdir, f"gpt_migrate/{testfile}"), CONTEXT_WINDOW_SIZE) as file_chunks:
+                for chunk in file_chunks:
+                    tests_content += chunk
             require_human_intervention(error_message,relevant_files=construct_relevant_files([(f"gpt_migrate/{testfile}", tests_content)]),globals=globals)
             raise typer.Exit()
     except subprocess.TimeoutExpired as e:
@@ -108,14 +114,12 @@ def run_test(testfile,globals):
             return error_message
         else:
             tests_content = ""
-            with open(os.path.join(globals.targetdir, f"gpt_migrate/{testfile}"), 'r') as file:
-                tests_content = file.read()
+            with read_file_in_chunks(os.path.join(globals.targetdir, f"gpt_migrate/{testfile}"), CONTEXT_WINDOW_SIZE) as file_chunks:
+                for chunk in file_chunks:
+                    tests_content += chunk
             require_human_intervention(error_message,relevant_files=construct_relevant_files([(f"gpt_migrate/{testfile}", tests_content)]),globals=globals)
             raise typer.Exit()
 
     except subprocess.TimeoutExpired as e:
         print(f"gpt_migrate/{testfile} timed out due to an unknown error and requires debugging.")
         return f"gpt_migrate/{testfile} timed out due to an unknown error and requires debugging."
-
-
-        
