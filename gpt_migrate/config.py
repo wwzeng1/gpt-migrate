@@ -8,6 +8,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 '''
 Global variables
 '''
+CONTEXT_WINDOW_SIZE = 5000
 MAX_ERROR_MESSAGE_CHARACTERS = 5000
 MAX_DOCKER_LOG_CHARACTERS = 2000
 
@@ -51,7 +52,7 @@ EXCLUDED_FILES = [
     'package.json', 
     'package-lock.json', 
     'yarn.lock', 
-    'node_modules/'
+    'node_modules/',
 
     # Rust
     'Cargo.toml'
