@@ -55,8 +55,9 @@ def debug_error(error_message,relevant_files,globals):
             fileslist = globals.testfiles.split(',')
             files_to_construct = []
             for file_name in fileslist:
-                with open(os.path.join(globals.sourcedir, file_name), 'r') as file:
-                    file_content = file.read()
+                with read_file_in_chunks(os.path.join(globals.sourcedir, file_name), CONTEXT_WINDOW_SIZE) as file_chunks:
+                    for chunk in file_chunks:
+                        file_content += chunk
                 files_to_construct.append(("migration_source/"+file_name, file_content))
         
             relevant_files = construct_relevant_files(files_to_construct)
@@ -78,8 +79,9 @@ def debug_error(error_message,relevant_files,globals):
         for file_name in file_name_list:
             old_file_content = ""
             try:
-                with open(os.path.join(globals.targetdir, file_name), 'r') as file:
-                    old_file_content = file.read()
+                with read_file_in_chunks(os.path.join(globals.targetdir, file_name), CONTEXT_WINDOW_SIZE) as file_chunks:
+                    for chunk in file_chunks:
+                        old_file_content += chunk
             except:
                 print("File not found: "+file_name+". Please ensure the file exists and try again. You can resume the debugging process with the `--step test` flag.")
                 raise typer.Exit()
@@ -126,15 +128,17 @@ def debug_error(error_message,relevant_files,globals):
 
 def debug_testfile(error_message,testfile,globals):
 
-    source_file_content = ""
-    with open(os.path.join(globals.sourcedir, testfile), 'r') as file:
+    with read_file_in_chunks(os.path.join(globals.sourcedir, testfile), CONTEXT_WINDOW_SIZE) as file_chunks:
+        for chunk in file_chunks:
+            source_file_content += chunk
         source_file_content = file.read()
     
     relevant_files = construct_relevant_files([("migration_source/"+testfile, source_file_content)])
 
     file_name = f"gpt_migrate/{testfile}.tests.py"
-    try:
-        with open(os.path.join(globals.targetdir, file_name), 'r') as file:
+    with read_file_in_chunks(os.path.join(globals.targetdir, file_name), CONTEXT_WINDOW_SIZE) as file_chunks:
+        for chunk in file_chunks:
+            old_file_content += chunk
             old_file_content = file.read()
     except:
         print("File not found: "+file_name+". Please ensure the file exists and try again. You can resume the debugging process with the `--step test` flag.")
