@@ -12,8 +12,9 @@ def get_dependencies(sourcefile,globals):
     internal_deps_prompt_template = prompt_constructor(HIERARCHY, GUIDELINES, GET_INTERNAL_DEPS)
 
     sourcefile_content = ""
-    with open(os.path.join(globals.sourcedir, sourcefile), 'r') as file:
-        sourcefile_content = file.read()
+    with read_file_in_chunks(os.path.join(globals.sourcedir, sourcefile), CONTEXT_WINDOW_SIZE) as file_chunks:
+        for chunk in file_chunks:
+            sourcefile_content += chunk
     
     prompt = external_deps_prompt_template.format(targetlang=globals.targetlang, 
                                                     sourcelang=globals.sourcelang, 
@@ -54,8 +55,9 @@ def write_migration(sourcefile, external_deps_list, globals):
     write_migration_template = prompt_constructor(HIERARCHY, GUIDELINES, WRITE_CODE, WRITE_MIGRATION, SINGLEFILE)
 
     sourcefile_content = ""
-    with open(os.path.join(globals.sourcedir, sourcefile), 'r') as file:
-        sourcefile_content = file.read()
+    with read_file_in_chunks(os.path.join(globals.sourcedir, sourcefile), CONTEXT_WINDOW_SIZE) as file_chunks:
+        for chunk in file_chunks:
+            sourcefile_content += chunk
     
     prompt = write_migration_template.format(targetlang=globals.targetlang,
                                                 sourcelang=globals.sourcelang,
