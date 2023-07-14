@@ -204,13 +204,19 @@ def find_and_replace_file(filepath,find,replace):
     testfile_content = testfile_content.replace(find,replace)
     with open(filepath, 'w') as file:
         file.write(testfile_content)
+
 def read_file_in_chunks(file_path, chunk_size):
-    """
-    Generator to read a file in chunks of bytes
-    """
+    '''
+    Generator to read a file in chunks of lines
+    '''
     with open(file_path, 'r') as file:
         while True:
-            data = file.read(chunk_size)
-            if not data:
+            lines = []
+            for _ in range(chunk_size):
+                line = file.readline()
+                if not line:
+                    break
+                lines.append(line)
+            if not lines:
                 break
-            yield data
+            yield lines
