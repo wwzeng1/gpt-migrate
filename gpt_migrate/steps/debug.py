@@ -8,7 +8,7 @@ def debug_error(error_message,relevant_files,globals):
 
     identify_action_template = prompt_constructor(HIERARCHY, GUIDELINES, IDENTIFY_ACTION)
 
-    prompt = identify_action_template.format(error_message=error_message[-min(MAX_ERROR_MESSAGE_CHARACTERS, len(error_message)):],
+    prompt = identify_action_template.format(error_message=error_message,
                                                 target_directory_structure=build_directory_structure(globals.targetdir))
     
     actions = llm_run(prompt,
@@ -132,27 +132,27 @@ def debug_testfile(error_message,testfile,globals):
     
     relevant_files = construct_relevant_files([("migration_source/"+testfile, source_file_content)])
 
-    file_name = f"gpt_migrate/{testfile}.tests.py"
-    try:
-        with open(os.path.join(globals.targetdir, file_name), 'r') as file:
-            old_file_content = file.read()
-    except:
-        print("File not found: "+file_name+". Please ensure the file exists and try again. You can resume the debugging process with the `--step test` flag.")
-        raise typer.Exit()
+        file_name = f"gpt_migrate/{testfile}.tests.py"
+        try:
+            with open(os.path.join(globals.targetdir, file_name), 'r') as file:
+                old_file_content = file.read()
+        except:
+            print("File not found: "+file_name+". Please ensure the file exists and try again. You can resume the debugging process with the `--step test` flag.")
+            raise typer.Exit()
 
-    debug_file_template = prompt_constructor(HIERARCHY, GUIDELINES, WRITE_CODE, DEBUG_TESTFILE, SINGLEFILE)
-    
-    prompt = debug_file_template.format(error_message=error_message[-min(MAX_ERROR_MESSAGE_CHARACTERS, len(error_message)):],
-                                        file_name=file_name,
-                                        old_file_content=old_file_content,
-                                        relevant_files=relevant_files,
-                                        guidelines=globals.guidelines),
+        debug_file_template = prompt_constructor(HIERARCHY, GUIDELINES, WRITE_CODE, DEBUG_TESTFILE, SINGLEFILE)
+        
+        prompt = debug_file_template.format(error_message=error_message[-min(MAX_ERROR_MESSAGE_CHARACTERS, len(error_message)):],
+                                            file_name=file_name,
+                                            old_file_content=old_file_content,
+                                            relevant_files=relevant_files,
+                                            guidelines=globals.guidelines),
 
-    _, language, file_content = llm_write_file(prompt,
-                                                target_path=file_name,
-                                                waiting_message=f"Debugging {file_name}...",
-                                                success_message=f"Re-wrote {file_name} based on error message.",
-                                                globals=globals)
+        _, language, file_content = llm_write_file(prompt,
+                                                    target_path=file_name,
+                                                    waiting_message=f"Debugging {file_name}...",
+                                                    success_message=f"Re-wrote {file_name} based on error message.",
+                                                    globals=globals)
 
     with open(os.path.join(globals.targetdir, file_name), 'r') as file:
         new_file_content = file.read()

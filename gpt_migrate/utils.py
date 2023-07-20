@@ -44,6 +44,11 @@ def llm_run(prompt,waiting_message,success_message,globals):
     
     return output
 
+def split_file_into_chunks(filepath, chunk_size):
+    with open(filepath, 'r') as file:
+        content = file.read()
+    return [content[i:i+chunk_size] for i in range(0, len(content), chunk_size)]
+
 def llm_write_file(prompt,target_path,waiting_message,success_message,globals):
     
     file_content = ""
@@ -54,12 +59,15 @@ def llm_write_file(prompt,target_path,waiting_message,success_message,globals):
     if file_name=="INSTRUCTIONS:":
         return "INSTRUCTIONS:","",file_content
 
-    if target_path:
-        with open(os.path.join(globals.targetdir, target_path), 'w') as file:
-            file.write(file_content)
-    else:
-        with open(os.path.join(globals.targetdir, file_name), 'w') as file:
-            file.write(file_content)
+    # Split the file content into chunks based on the context window size for more efficient processing
+    chunks = split_file_into_chunks(file_content, globals.context_window_size)
+    for chunk in chunks:
+        if target_path:
+            with open(os.path.join(globals.targetdir, target_path), 'a') as file:
+                file.write(chunk)
+        else:
+            with open(os.path.join(globals.targetdir, file_name), 'a') as file:
+                file.write(chunk)
 
     if success_message:
         success_text = typer.style(success_message, fg=typer.colors.GREEN)
@@ -80,12 +88,14 @@ def llm_write_files(prompt,target_path,waiting_message,success_message,globals):
     for result in results:
         file_name,language,file_content = result
 
-        if target_path:
-            with open(os.path.join(globals.targetdir, target_path), 'w') as file:
-                file.write(file_content)
-        else:
-            with open(os.path.join(globals.targetdir, file_name), 'w') as file:
-                file.write(file_content)
+        chunks = split_file_into_chunks(file_content, globals.context_window_size)
+        for chunk in chunks:
+            if target_path:
+                with open(os.path.join(globals.targetdir, target_path), 'a') as file:
+                    file.write(chunk)
+            else:
+                with open(os.path.join(globals.targetdir, file_name), 'a') as file:
+                    file.write(chunk)
 
         if not success_message:
             success_text = typer.style(f"Created {file_name} at {globals.targetdir}", fg=typer.colors.GREEN)

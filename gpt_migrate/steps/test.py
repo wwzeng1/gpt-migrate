@@ -1,3 +1,4 @@
+from utils import split_file_into_chunks
 from utils import prompt_constructor, llm_write_file, construct_relevant_files, find_and_replace_file
 from config import HIERARCHY, GUIDELINES, WRITE_CODE, CREATE_TESTS, SINGLEFILE
 import subprocess
@@ -38,60 +39,69 @@ def create_tests(testfile,globals):
     # Makedir gpt_migrate in targetdir if it doesn't exist
     if not os.path.exists(os.path.join(globals.targetdir, 'gpt_migrate')):
         os.makedirs(os.path.join(globals.targetdir, 'gpt_migrate'))
-
-    old_file_content = ""
-    with open(os.path.join(globals.sourcedir, testfile), 'r') as file:
-        old_file_content = file.read()
-
-    create_tests_template = prompt_constructor(HIERARCHY, GUIDELINES, WRITE_CODE, CREATE_TESTS, SINGLEFILE)
-
-    prompt = create_tests_template.format(targetport=globals.targetport,
-                                          old_file_content=old_file_content,
-                                          guidelines=globals.guidelines)
-
-    _, _, file_content = llm_write_file(prompt,
-                                        target_path=f"gpt_migrate/{testfile}.tests.py",
-                                        waiting_message="Creating tests file...",
-                                        success_message=f"Created {testfile}.tests.py file in directory gpt_migrate.",
-                                        globals=globals)
-    return f"{testfile}.tests.py"
+        def create_tests(testfile,globals):
+        
+            old_file_content = ""
+            with open(os.path.join(globals.sourcedir, testfile), 'r') as file:
+                old_file_content = file.read()
+        
+    # Split the old file content into chunks based on the context window size for more efficient processing
+    chunks = split_file_into_chunks(old_file_content, globals.context_window_size)
+    for chunk in chunks:
+                create_tests_template = prompt_constructor(HIERARCHY, GUIDELINES, WRITE_CODE, CREATE_TESTS, SINGLEFILE)
+        
+                prompt = create_tests_template.format(targetport=globals.targetport,
+                                                      old_file_content=chunk,
+                                                      guidelines=globals.guidelines)
+        
+                _, _, file_content = llm_write_file(prompt,
+                                                    target_path=f"gpt_migrate/{testfile}.tests.py",
+                                                    waiting_message="Creating tests file...",
+                                                    success_message=f"Created {testfile}.tests.py file in directory gpt_migrate.",
+                                                    globals=globals)
+            return f"{testfile}.tests.py"
 
 def validate_tests(testfile,globals):
-    try:
-        with yaspin(text="Validating tests...", spinner="dots") as spinner:
-            # find all instances of globals.targetport in the testfile and replace with the port number globals.sourceport
-            find_and_replace_file(os.path.join(globals.targetdir, f"gpt_migrate/{testfile}"), str(globals.targetport), str(globals.sourceport))
-            time.sleep(0.3)
-            result = subprocess.run(["python3", os.path.join(globals.targetdir,f"gpt_migrate/{testfile}")], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True, text=True, timeout=15)
-            spinner.ok("✅ ")
-        print(result.stdout)
-        find_and_replace_file(os.path.join(globals.targetdir, f"gpt_migrate/{testfile}"), str(globals.sourceport), str(globals.targetport))
-        typer.echo(typer.style(f"Tests validated successfully on your source app.", fg=typer.colors.GREEN))
-        return "success"
-    except subprocess.CalledProcessError as e:
-        find_and_replace_file(os.path.join(globals.targetdir, f"gpt_migrate/{testfile}"), str(globals.sourceport), str(globals.targetport))
-        print("ERROR: ",e.output)
-        error_message = e.output
-        error_text = typer.style(f"Validating {testfile} against your existing service failed. Please take a look at the error message and try to resolve the issue. Once these are resolved, you can resume your progress with the `--step test` flag.", fg=typer.colors.RED)
-        typer.echo(error_text)
+    def validate_tests(testfile,globals):
+        try:
+            with yaspin(text="Validating tests...", spinner="dots") as spinner:
+                find_and_replace_file(os.path.join(globals.targetdir, f"gpt_migrate/{testfile}"), str(globals.targetport), str(globals.sourceport))
+                time.sleep(0.3)
+    # Split the test file into chunks based on the context window size for more efficient processing
+    chunks = split_file_into_chunks(testfile, globals.context_window_size)
+    for chunk in chunks:
+                    result = subprocess.run(["python3", os.path.join(globals.targetdir,f"gpt_migrate/{chunk}")], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True, text=True, timeout=15)
+                spinner.ok("✅ ")
+            print(result.stdout)
+            find_and_replace_file(os.path.join(globals.targetdir, f"gpt_migrate/{testfile}"), str(globals.sourceport), str(globals.targetport))
+            typer.echo(typer.style(f"Tests validated successfully on your source app.", fg=typer.colors.GREEN))
+            return "success"
+        except subprocess.CalledProcessError as e:
+            find_and_replace_file(os.path.join(globals.targetdir, f"gpt_migrate/{testfile}"), str(globals.sourceport), str(globals.targetport))
+            print("ERROR: ",e.output)
+            error_message = e.output
+            error_text = typer.style(f"Validating {testfile} against your existing service failed. Please take a look at the error message and try to resolve the issue. Once these are resolved, you can resume your progress with the `--step test` flag.", fg=typer.colors.RED)
+            typer.echo(error_text)
 
-        if typer.confirm("Would you like GPT-Migrate to try to fix this?"):
-            return error_message
-        else:
-            tests_content = ""
-            with open(os.path.join(globals.targetdir, f"gpt_migrate/{testfile}"), 'r') as file:
-                tests_content = file.read()
-            require_human_intervention(error_message,relevant_files=construct_relevant_files([(f"gpt_migrate/{testfile}", tests_content)]),globals=globals)
-            raise typer.Exit()
-    except subprocess.TimeoutExpired as e:
-        print(f"gpt_migrate/{testfile} timed out due to an unknown error and requires debugging.")
-        return f"gpt_migrate/{testfile} timed out due to an unknown error and requires debugging."
+            if typer.confirm("Would you like GPT-Migrate to try to fix this?"):
+                return error_message
+            else:
+                tests_content = ""
+                with open(os.path.join(globals.targetdir, f"gpt_migrate/{testfile}"), 'r') as file:
+                    tests_content = file.read()
+                require_human_intervention(error_message,relevant_files=construct_relevant_files([(f"gpt_migrate/{testfile}", tests_content)]),globals=globals)
+                raise typer.Exit()
+        except subprocess.TimeoutExpired as e:
+            print(f"gpt_migrate/{testfile} timed out due to an unknown error and requires debugging.")
+            return f"gpt_migrate/{testfile} timed out due to an unknown error and requires debugging."
 
 def run_test(testfile,globals):
     try:
         with yaspin(text="Running tests...", spinner="dots") as spinner:
             time.sleep(0.3)
-            result = subprocess.run(["python3", os.path.join(globals.targetdir,f"gpt_migrate/{testfile}")], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True, text=True, timeout=15)
+            chunks = split_file_into_chunks(testfile, globals.context_window_size)
+            for chunk in chunks:
+                result = subprocess.run(["python3", os.path.join(globals.targetdir,f"gpt_migrate/{chunk}")], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True, text=True, timeout=15)
             spinner.ok("✅ ")
 
         print(result.stdout)
@@ -116,6 +126,3 @@ def run_test(testfile,globals):
     except subprocess.TimeoutExpired as e:
         print(f"gpt_migrate/{testfile} timed out due to an unknown error and requires debugging.")
         return f"gpt_migrate/{testfile} timed out due to an unknown error and requires debugging."
-
-
-        

@@ -1,3 +1,4 @@
+from utils import split_file_into_chunks
 from utils import prompt_constructor, llm_write_file, llm_run, build_directory_structure, copy_files, write_to_memory, read_from_memory
 from config import HIERARCHY, GUIDELINES, WRITE_CODE, GET_EXTERNAL_DEPS, GET_INTERNAL_DEPS, ADD_DOCKER_REQUIREMENTS, REFINE_DOCKERFILE, WRITE_MIGRATION, SINGLEFILE, EXCLUDED_FILES
 import os
@@ -57,20 +58,23 @@ def write_migration(sourcefile, external_deps_list, globals):
     with open(os.path.join(globals.sourcedir, sourcefile), 'r') as file:
         sourcefile_content = file.read()
     
-    prompt = write_migration_template.format(targetlang=globals.targetlang,
-                                                sourcelang=globals.sourcelang,
-                                                sourcefile=sourcefile,
-                                                sourcefile_content=sourcefile_content,
-                                                external_deps=','.join(external_deps_list),
-                                                source_directory_structure=globals.source_directory_structure,
-                                                target_directory_structure=build_directory_structure(globals.targetdir),
-                                                guidelines=globals.guidelines)
+    # Split the source file content into chunks based on the context window size for more efficient processing
+    chunks = split_file_into_chunks(sourcefile_content, globals.context_window_size)
+    for chunk in chunks:
+        prompt = write_migration_template.format(targetlang=globals.targetlang,
+                                                    sourcelang=globals.sourcelang,
+                                                    sourcefile=sourcefile,
+                                                    sourcefile_content=chunk,
+                                                    external_deps=','.join(external_deps_list),
+                                                    source_directory_structure=globals.source_directory_structure,
+                                                    target_directory_structure=build_directory_structure(globals.targetdir),
+                                                    guidelines=globals.guidelines)
 
-    llm_write_file(prompt,
-                    target_path=None,
-                    waiting_message=f"Creating migration file for {sourcefile}...",
-                    success_message=None,
-                    globals=globals)
+        llm_write_file(prompt,
+                        target_path=None,
+                        waiting_message=f"Creating migration file for {sourcefile}...",
+                        success_message=None,
+                        globals=globals)
     
 def add_env_files(globals):
 
