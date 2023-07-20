@@ -1,3 +1,4 @@
+from utils import split_file_into_chunks
 from utils import prompt_constructor, llm_write_file, llm_run, build_directory_structure, construct_relevant_files
 from config import HIERARCHY, GUIDELINES, WRITE_CODE, IDENTIFY_ACTION, MOVE_FILES, CREATE_FILE, IDENTIFY_FILE, DEBUG_FILE, DEBUG_TESTFILE, HUMAN_INTERVENTION, SINGLEFILE, FILENAMES, MAX_ERROR_MESSAGE_CHARACTERS, MAX_DOCKER_LOG_CHARACTERS
 import os

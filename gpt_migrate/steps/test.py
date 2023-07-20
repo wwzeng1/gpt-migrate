@@ -1,3 +1,4 @@
+from utils import split_file_into_chunks
 from utils import prompt_constructor, llm_write_file, construct_relevant_files, find_and_replace_file
 from config import HIERARCHY, GUIDELINES, WRITE_CODE, CREATE_TESTS, SINGLEFILE
 import subprocess
@@ -37,6 +38,7 @@ def create_tests(testfile,globals):
 
     # Makedir gpt_migrate in targetdir if it doesn't exist
     if not os.path.exists(os.path.join(globals.targetdir, 'gpt_migrate')):
+        os.makedirs(os.path.join(globals.targetdir, 'gpt_migrate'))
         def create_tests(testfile,globals):
         
             old_file_content = ""

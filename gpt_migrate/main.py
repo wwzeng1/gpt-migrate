@@ -26,6 +26,7 @@ class Globals:
         self.targetport = targetport
         self.guidelines = guidelines
         self.ai = ai
+        self.context_window_size = 1000
         
 
 @app.command()
