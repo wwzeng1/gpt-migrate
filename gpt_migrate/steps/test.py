@@ -45,8 +45,9 @@ def create_tests(testfile,globals):
             with open(os.path.join(globals.sourcedir, testfile), 'r') as file:
                 old_file_content = file.read()
         
-            chunks = split_file_into_chunks(old_file_content, globals.context_window_size)
-            for chunk in chunks:
+    # Split the old file content into chunks based on the context window size for more efficient processing
+    chunks = split_file_into_chunks(old_file_content, globals.context_window_size)
+    for chunk in chunks:
                 create_tests_template = prompt_constructor(HIERARCHY, GUIDELINES, WRITE_CODE, CREATE_TESTS, SINGLEFILE)
         
                 prompt = create_tests_template.format(targetport=globals.targetport,
@@ -66,8 +67,9 @@ def validate_tests(testfile,globals):
             with yaspin(text="Validating tests...", spinner="dots") as spinner:
                 find_and_replace_file(os.path.join(globals.targetdir, f"gpt_migrate/{testfile}"), str(globals.targetport), str(globals.sourceport))
                 time.sleep(0.3)
-                chunks = split_file_into_chunks(testfile, globals.context_window_size)
-                for chunk in chunks:
+    # Split the test file into chunks based on the context window size for more efficient processing
+    chunks = split_file_into_chunks(testfile, globals.context_window_size)
+    for chunk in chunks:
                     result = subprocess.run(["python3", os.path.join(globals.targetdir,f"gpt_migrate/{chunk}")], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True, text=True, timeout=15)
                 spinner.ok("✅ ")
             print(result.stdout)
