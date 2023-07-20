@@ -57,20 +57,22 @@ def write_migration(sourcefile, external_deps_list, globals):
     with open(os.path.join(globals.sourcedir, sourcefile), 'r') as file:
         sourcefile_content = file.read()
     
-    prompt = write_migration_template.format(targetlang=globals.targetlang,
-                                                sourcelang=globals.sourcelang,
-                                                sourcefile=sourcefile,
-                                                sourcefile_content=sourcefile_content,
-                                                external_deps=','.join(external_deps_list),
-                                                source_directory_structure=globals.source_directory_structure,
-                                                target_directory_structure=build_directory_structure(globals.targetdir),
-                                                guidelines=globals.guidelines)
+    chunks = split_file_into_chunks(sourcefile_content, globals.context_window_size)
+    for chunk in chunks:
+        prompt = write_migration_template.format(targetlang=globals.targetlang,
+                                                    sourcelang=globals.sourcelang,
+                                                    sourcefile=sourcefile,
+                                                    sourcefile_content=chunk,
+                                                    external_deps=','.join(external_deps_list),
+                                                    source_directory_structure=globals.source_directory_structure,
+                                                    target_directory_structure=build_directory_structure(globals.targetdir),
+                                                    guidelines=globals.guidelines)
 
-    llm_write_file(prompt,
-                    target_path=None,
-                    waiting_message=f"Creating migration file for {sourcefile}...",
-                    success_message=None,
-                    globals=globals)
+        llm_write_file(prompt,
+                        target_path=None,
+                        waiting_message=f"Creating migration file for {sourcefile}...",
+                        success_message=None,
+                        globals=globals)
     
 def add_env_files(globals):
 
