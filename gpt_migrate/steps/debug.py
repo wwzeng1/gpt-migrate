@@ -9,6 +9,7 @@ def debug_error(error_message,relevant_files,globals):
 
     identify_action_template = prompt_constructor(HIERARCHY, GUIDELINES, IDENTIFY_ACTION)
 
+    # Split the error message into chunks based on the context window size for more efficient processing
     chunks = split_file_into_chunks(error_message, globals.context_window_size)
     for chunk in chunks:
         prompt = identify_action_template.format(error_message=chunk,
@@ -133,6 +134,7 @@ def debug_testfile(error_message,testfile,globals):
     with open(os.path.join(globals.sourcedir, testfile), 'r') as file:
         source_file_content = file.read()
     
+    # Split the source file content into chunks based on the context window size for more efficient processing
     chunks = split_file_into_chunks(source_file_content, globals.context_window_size)
     for chunk in chunks:
         relevant_files = construct_relevant_files([("migration_source/"+testfile, chunk)])
