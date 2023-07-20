@@ -12,6 +12,8 @@ def get_dependencies(sourcefile,globals):
     internal_deps_prompt_template = prompt_constructor(HIERARCHY, GUIDELINES, GET_INTERNAL_DEPS)
 
     sourcefile_content = []
+    if not hasattr(globals, 'context_window_size'):
+        globals.context_window_size = 1000
     for chunk in break_down_large_file(os.path.join(globals.sourcedir, sourcefile), globals.context_window_size):
         sourcefile_content.append(chunk)
     
@@ -54,6 +56,8 @@ def write_migration(sourcefile, external_deps_list, globals):
     write_migration_template = prompt_constructor(HIERARCHY, GUIDELINES, WRITE_CODE, WRITE_MIGRATION, SINGLEFILE)
 
     sourcefile_content = []
+    if not hasattr(globals, 'context_window_size'):
+        globals.context_window_size = 1000
     for chunk in break_down_large_file(os.path.join(globals.sourcedir, sourcefile), globals.context_window_size):
         sourcefile_content.append(chunk)
     
