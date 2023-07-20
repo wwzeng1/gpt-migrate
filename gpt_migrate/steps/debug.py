@@ -1,4 +1,3 @@
-from utils import split_file_into_chunks
 from utils import prompt_constructor, llm_write_file, llm_run, build_directory_structure, construct_relevant_files
 from config import HIERARCHY, GUIDELINES, WRITE_CODE, IDENTIFY_ACTION, MOVE_FILES, CREATE_FILE, IDENTIFY_FILE, DEBUG_FILE, DEBUG_TESTFILE, HUMAN_INTERVENTION, SINGLEFILE, FILENAMES, MAX_ERROR_MESSAGE_CHARACTERS, MAX_DOCKER_LOG_CHARACTERS
 import os
@@ -9,16 +8,13 @@ def debug_error(error_message,relevant_files,globals):
 
     identify_action_template = prompt_constructor(HIERARCHY, GUIDELINES, IDENTIFY_ACTION)
 
-    # Split the error message into chunks based on the context window size for more efficient processing
-    chunks = split_file_into_chunks(error_message, globals.context_window_size)
-    for chunk in chunks:
-        prompt = identify_action_template.format(error_message=chunk,
-                                                    target_directory_structure=build_directory_structure(globals.targetdir))
-        
-        actions = llm_run(prompt,
-                            waiting_message=f"Planning actions for debugging...",
-                            success_message="",
-                            globals=globals)
+    prompt = identify_action_template.format(error_message=error_message,
+                                                target_directory_structure=build_directory_structure(globals.targetdir))
+    
+    actions = llm_run(prompt,
+                        waiting_message=f"Planning actions for debugging...",
+                        success_message="",
+                        globals=globals)
     
     action_list = actions.split(',')
     
@@ -134,10 +130,7 @@ def debug_testfile(error_message,testfile,globals):
     with open(os.path.join(globals.sourcedir, testfile), 'r') as file:
         source_file_content = file.read()
     
-    # Split the source file content into chunks based on the context window size for more efficient processing
-    chunks = split_file_into_chunks(source_file_content, globals.context_window_size)
-    for chunk in chunks:
-        relevant_files = construct_relevant_files([("migration_source/"+testfile, chunk)])
+    relevant_files = construct_relevant_files([("migration_source/"+testfile, source_file_content)])
 
         file_name = f"gpt_migrate/{testfile}.tests.py"
         try:
