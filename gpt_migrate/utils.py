@@ -59,6 +59,7 @@ def llm_write_file(prompt,target_path,waiting_message,success_message,globals):
     if file_name=="INSTRUCTIONS:":
         return "INSTRUCTIONS:","",file_content
 
+    # Split the file content into chunks based on the context window size for more efficient processing
     chunks = split_file_into_chunks(file_content, globals.context_window_size)
     for chunk in chunks:
         if target_path:
