@@ -58,6 +58,7 @@ def write_migration(sourcefile, external_deps_list, globals):
     with open(os.path.join(globals.sourcedir, sourcefile), 'r') as file:
         sourcefile_content = file.read()
     
+    # Split the source file content into chunks based on the context window size for more efficient processing
     chunks = split_file_into_chunks(sourcefile_content, globals.context_window_size)
     for chunk in chunks:
         prompt = write_migration_template.format(targetlang=globals.targetlang,
