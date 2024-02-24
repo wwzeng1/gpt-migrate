@@ -10,6 +10,7 @@ Global variables
 '''
 MAX_ERROR_MESSAGE_CHARACTERS = 5000
 MAX_DOCKER_LOG_CHARACTERS = 2000
+context_window_size = 1000
 
 '''
 Prompt directory

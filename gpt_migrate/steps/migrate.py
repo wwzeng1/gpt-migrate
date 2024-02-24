@@ -1,4 +1,4 @@
-from utils import prompt_constructor, llm_write_file, llm_run, build_directory_structure, copy_files, write_to_memory, read_from_memory
+from utils import prompt_constructor, llm_write_file, llm_run, build_directory_structure, copy_files, write_to_memory, read_from_memory, break_down_large_file
 from config import HIERARCHY, GUIDELINES, WRITE_CODE, GET_EXTERNAL_DEPS, GET_INTERNAL_DEPS, ADD_DOCKER_REQUIREMENTS, REFINE_DOCKERFILE, WRITE_MIGRATION, SINGLEFILE, EXCLUDED_FILES
 import os
 import typer
@@ -11,9 +11,11 @@ def get_dependencies(sourcefile,globals):
     external_deps_prompt_template = prompt_constructor(HIERARCHY, GUIDELINES, GET_EXTERNAL_DEPS)
     internal_deps_prompt_template = prompt_constructor(HIERARCHY, GUIDELINES, GET_INTERNAL_DEPS)
 
-    sourcefile_content = ""
-    with open(os.path.join(globals.sourcedir, sourcefile), 'r') as file:
-        sourcefile_content = file.read()
+    sourcefile_content = []
+    if not hasattr(globals, 'context_window_size'):
+        globals.context_window_size = 1000
+    for chunk in break_down_large_file(os.path.join(globals.sourcedir, sourcefile), globals.context_window_size):
+        sourcefile_content.append(chunk)
     
     prompt = external_deps_prompt_template.format(targetlang=globals.targetlang, 
                                                     sourcelang=globals.sourcelang, 
@@ -53,9 +55,11 @@ def write_migration(sourcefile, external_deps_list, globals):
     
     write_migration_template = prompt_constructor(HIERARCHY, GUIDELINES, WRITE_CODE, WRITE_MIGRATION, SINGLEFILE)
 
-    sourcefile_content = ""
-    with open(os.path.join(globals.sourcedir, sourcefile), 'r') as file:
-        sourcefile_content = file.read()
+    sourcefile_content = []
+    if not hasattr(globals, 'context_window_size'):
+        globals.context_window_size = 1000
+    for chunk in break_down_large_file(os.path.join(globals.sourcedir, sourcefile), globals.context_window_size):
+        sourcefile_content.append(chunk)
     
     prompt = write_migration_template.format(targetlang=globals.targetlang,
                                                 sourcelang=globals.sourcelang,
